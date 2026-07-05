@@ -1,146 +1,161 @@
-# Salesforce CRM Integration (Python)
+# ☁️ Salesforce CRM App
 
-A clean Python integration with Salesforce covering **Contacts, Leads, Opportunities, and Tasks** using `simple-salesforce`.
+A full-featured CRM application built with **Python** and **Streamlit** that connects to any Salesforce account. Manage Contacts, Leads, Opportunities, and Tasks from a clean web interface — without needing to log into Salesforce directly.
+
+## 📸 Features
+
+- 📊 **Dashboard** — Live metrics, bar charts, and overdue task tracker
+- 👤 **Contacts** — Create, search, edit, and delete customers
+- 🎯 **Leads** — Manage potential customers with status tracking + Convert Lead button
+- 💼 **Opportunities** — Track deals through all pipeline stages
+- ✅ **Tasks** — Follow-up reminders with priority and due dates
+- 🔄 **Convert Lead** — One click converts a Lead into Contact + Account + Opportunity
 
 ---
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 sf_crm/
-├── .env.example        # Credentials template
-├── requirements.txt    # Dependencies
-├── sf_connection.py    # Auth / connection
-├── contacts.py         # Contact CRUD + search
-├── leads.py            # Lead CRUD + status + summary
+├── app.py              # ⭐ Streamlit UI — all pages and forms
+├── sf_connection.py    # Salesforce authentication
+├── contacts.py         # Contact CRUD operations
+├── leads.py            # Lead CRUD + status management
 ├── opportunities.py    # Deal CRUD + pipeline summary
 ├── tasks.py            # Task CRUD + overdue tracker
-└── main.py             # Demo entrypoint
+├── main.py             # CLI demo (no UI)
+├── requirements.txt    # Python dependencies
+└── .env.example        # Credentials template
 ```
 
 ---
 
-## Project Structure
+## ⚙️ Setup & Installation
 
-```
-sf_crm/
-├── .env.example        # Credentials template (for CLI use)
-├── requirements.txt    # Dependencies
-├── sf_connection.py    # Auth / connection
-├── contacts.py         # Contact CRUD + search
-├── leads.py            # Lead CRUD + status + summary
-├── opportunities.py    # Deal CRUD + pipeline summary
-├── tasks.py            # Task CRUD + overdue tracker
-├── app.py              # ⭐ Streamlit UI
-└── main.py             # CLI demo entrypoint
+### 1. Clone the repository
+```bash
+git clone https://github.com/YOUR_USERNAME/salesforce-crm.git
+cd salesforce-crm
 ```
 
----
-
-## Setup
-
-### 1. Install dependencies
+### 2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run the Streamlit app
+### 3. Get a free Salesforce Developer account
+Sign up at → **developer.salesforce.com/signup** (free, no credit card needed)
+
+### 4. Set up a Connected App in Salesforce
+1. Go to **Setup → External Client App Manager → New External Client App**
+2. Enable OAuth Settings
+3. Set Callback URL to `http://localhost:8501`
+4. Add scope: **Full access (full)**
+5. Save and copy your **Consumer Key**
+
+### 5. Run the app
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-Enter your Salesforce credentials directly in the sidebar login form — no `.env` file needed for the UI.
+Opens at **http://localhost:8501**
 
-> **How to get your Security Token:**
-> Salesforce → Avatar (top right) → Settings → Reset My Security Token
+---
 
-### (Optional) CLI usage via `.env`
-```bash
-cp .env.example .env
-# Fill in SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN
-python main.py
+## 🔐 How to Connect
+
+This app uses **OAuth 2.0** to connect to Salesforce securely.
+
+**Every time you open the app:**
+
+1. Open this URL in your browser (replace `YOUR_DOMAIN` and `YOUR_CONSUMER_KEY`):
+```
+https://YOUR_DOMAIN.my.salesforce.com/services/oauth2/authorize?response_type=token&client_id=YOUR_CONSUMER_KEY&redirect_uri=http://localhost:8501
+```
+2. Click **Allow** on the Salesforce authorization page
+3. From the redirect URL, copy everything after `access_token=` and before `&refresh_token`
+4. Replace `%21` with `!` in the token
+5. Paste the token into the **Access Token** field in the sidebar
+6. Enter your **Instance URL** (e.g. `https://yourorg.my.salesforce.com`)
+7. Click **Connect**
+
+> 💡 Tip: Bookmark the authorization URL so you can get a token in one click every time!
+
+> ⚠️ Tokens expire after ~2 hours. Simply repeat the steps above to get a new one.
+
+---
+
+## 📖 How It Works
+
+```
+Your Browser (localhost:8501)
+        ↕
+    app.py  ← Streamlit UI
+        ↕
+contacts.py / leads.py / opportunities.py / tasks.py
+        ↕
+  sf_connection.py
+        ↕
+  Salesforce Cloud (via simple-salesforce)
+        ↕
+   Your Salesforce Org
 ```
 
 ---
 
-## Usage Examples
+## 🔄 Full Sales Cycle Example
 
-### Contacts
-```python
-from sf_connection import get_connection
-import contacts as c
-
-sf = get_connection()
-
-# Create
-id = c.create_contact(sf, "Ali", "Tahir", email="ali@example.com")
-
-# List
-c.list_contacts(sf, limit=10)
-
-# Search
-c.search_contacts(sf, "Tahir")
-
-# Update
-c.update_contact(sf, id, Title="CTO", Phone="+92-555-0000")
-
-# Delete
-c.delete_contact(sf, id)
 ```
-
-### Leads
-```python
-import leads as l
-
-id = l.create_lead(sf, "Sara", "Ahmad", company="Startup PK", source="Web")
-l.update_lead_status(sf, id, "Working - Contacted")
-l.lead_summary(sf)          # count by status
-```
-
-### Opportunities (Deals)
-```python
-import opportunities as o
-
-id = o.create_opportunity(sf, "Acme Deal", "Prospecting", "2025-12-31", amount=50000)
-o.move_stage(sf, id, "Qualification")
-o.pipeline_summary(sf)      # total value by stage
-```
-
-### Tasks
-```python
-import tasks as t
-
-id = t.create_task(sf, "Call client", due_date="2025-07-10", priority="High",
-                   who_id=contact_id, what_id=opp_id)
-t.overdue_tasks(sf)
-t.complete_task(sf, id)
+1. A potential customer contacts you
+        ↓
+2. Create a LEAD with their details
+        ↓
+3. Call them → update Lead status to "Working - Contacted"
+        ↓
+4. Create a TASK as a follow-up reminder
+        ↓
+5. They say YES → click "Convert Lead"
+        ↓
+   ✅ Contact created (the person)
+   ✅ Account created (their company)
+   ✅ Opportunity created (the deal)
+        ↓
+6. Move deal through stages → Closed Won 🎉
+        ↓
+7. Mark Task as Complete ✅
 ```
 
 ---
 
-## Key SOQL Examples
+## 🎯 Lead Statuses
 
-```sql
--- Open deals closing this quarter
-SELECT Name, Amount, StageName, CloseDate
-FROM Opportunity
-WHERE IsClosed = false AND CloseDate = THIS_QUARTER
-ORDER BY CloseDate ASC
-
--- All high-priority tasks due today
-SELECT Subject, ActivityDate, WhoId
-FROM Task
-WHERE Priority = 'High' AND ActivityDate = TODAY AND Status != 'Completed'
-
--- Leads by source
-SELECT LeadSource, COUNT(Id) total
-FROM Lead
-WHERE IsConverted = false
-GROUP BY LeadSource
-```
+| Status | Meaning |
+|---|---|
+| Open - Not Contacted | New lead, not yet reached out |
+| Working - Contacted | You called or emailed them |
+| Closed - Converted | They became a customer |
+| Closed - Not Converted | They were not interested |
 
 ---
 
-## Security Note
-- Never commit your `.env` file — add it to `.gitignore`
-- Never commit `credentials.json` or tokens if you extend this project
+## 📊 Opportunity Stages
+
+| Stage | Meaning |
+|---|---|
+| Prospecting | Found a potential customer, nothing confirmed |
+| Qualification | Confirmed they have budget and real interest |
+| Needs Analysis | Understanding exactly what they need |
+| Value Proposition | Explaining why your product is the best fit |
+| Id. Decision Makers | Finding out who makes the final decision |
+| Perception Analysis | Understanding their concerns and objections |
+| Proposal / Price Quote | Sent a formal proposal with pricing |
+| Negotiation / Review | They are reviewing and negotiating the deal |
+| Closed Won 🎉 | They signed and paid — deal is done! |
+| Closed Lost ❌ | They said no or went with a competitor |
+
+---
+
+
+## 👨‍💻 Author
+
+Built with Python, Streamlit, and the Salesforce REST API.
