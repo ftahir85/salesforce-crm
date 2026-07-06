@@ -377,20 +377,27 @@ elif page == "🎯 Leads":
                         phone   = rec.get("Phone", "")
                         company = rec.get("Company", "Unknown Company")
 
-                        # Step 1: Create Contact
+                        # Step 1: Create Contact (allow save even if duplicate)
+                        import requests as _req
                         contact_payload = {"FirstName": first, "LastName": last}
                         if phone: contact_payload["Phone"] = phone
-                        # use a unique email to avoid duplicate error
-                        if email:
-                            contact_payload["Email"] = email
-                        try:
-                            contact_res = sf.Contact.create(contact_payload)
-                            contact_id  = contact_res["id"]
-                        except Exception:
-                            # if duplicate, skip email
-                            contact_payload.pop("Email", None)
-                            contact_res = sf.Contact.create(contact_payload)
-                            contact_id  = contact_res["id"]
+                        if email: contact_payload["Email"] = email
+
+                        contact_url = f"{sf.base_url}sobjects/Contact/"
+                        headers = {
+                            "Authorization": f"Bearer {sf.session_id}",
+                            "Content-Type": "application/json",
+                            "Sforce-Duplicate-Rule-Header": "allowSave=true",
+                        }
+                        import json as _json
+                        resp = _req.post(contact_url, headers=headers, data=_json.dumps(contact_payload))
+                        resp_data = resp.json()
+                        if isinstance(resp_data, dict) and "id" in resp_data:
+                            contact_id = resp_data["id"]
+                        elif isinstance(resp_data, list) and "id" in resp_data[0]:
+                            contact_id = resp_data[0]["id"]
+                        else:
+                            raise Exception(f"Contact creation failed: {resp_data}")
 
                         # Step 2: Create Account
                         account_res = sf.Account.create({"Name": company})
